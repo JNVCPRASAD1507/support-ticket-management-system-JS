@@ -1,4 +1,3 @@
-
 # Environment
 .env
 
@@ -30,3 +29,8 @@ storage/attachments/*
 
 # Keep folder
 !storage/attachments/.gitkeep
+
+# Alembic
+alembic/__pycache__/
+alembic/versions/__pycache__/
+
