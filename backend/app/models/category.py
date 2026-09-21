@@ -1,23 +1,19 @@
-
 from datetime import datetime
-# from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, DateTime, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 
-
-# if TYPE_CHECKING:
-#     from app.models.ticket import Ticket
+if TYPE_CHECKING:
+    from app.models.ticket import Ticket
 
 
 class Category(Base):
     __tablename__ = "ticket_categories"
 
-    id: Mapped[int] = mapped_column(
-        primary_key=True
-    )
+    id: Mapped[int] = mapped_column(primary_key=True)
 
     name: Mapped[str] = mapped_column(
         String(100),
@@ -50,8 +46,6 @@ class Category(Base):
         nullable=False,
     )
 
-    # tickets: Mapped[list["Ticket"]] = relationship(
-    #     back_populates="category"
-    # )
-    
-    
+    tickets: Mapped[list["Ticket"]] = relationship(
+        back_populates="category",
+    )

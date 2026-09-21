@@ -1,12 +1,13 @@
+from app.models.user import User
+from app.models.role import Role
+from app.models.ticket import Ticket
 from app.models.category import Category
 from app.models.refresh_token import RefreshToken
-from app.models.role import Role
-from app.models.user import User
-
 
 __all__ = [
-    "Role",
     "User",
-    "RefreshToken",
+    "Role",
+    "Ticket",
     "Category",
+    "RefreshToken",
 ]
