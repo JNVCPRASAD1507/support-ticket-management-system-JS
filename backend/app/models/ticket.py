@@ -9,6 +9,7 @@ from app.db.base import Base
 if TYPE_CHECKING:
     from app.models.category import Category
     from app.models.user import User
+    from app.models.comment import Comment
 
 
 class Ticket(Base):
@@ -99,3 +100,9 @@ class Ticket(Base):
     assigned_to: Mapped["User | None"] = relationship(
         foreign_keys=[assigned_to_id],
     )
+    
+    comments: Mapped[list["Comment"]] = relationship(
+    back_populates="ticket",
+    cascade="all, delete-orphan",
+)
+    
