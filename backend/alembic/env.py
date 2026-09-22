@@ -15,6 +15,7 @@ from app.models.category import Category
 from app.models.comment import Comment
 from app.models.refresh_token import RefreshToken
 from app.models.attachment import Attachment
+from app.models.notification import Notification
 
 
 config = context.config

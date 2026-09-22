@@ -70,8 +70,10 @@ class Attachment(Base):
         nullable=False,
     )
 
-    ticket: Mapped["Ticket"] = relationship()
-
     uploaded_by: Mapped["User"] = relationship()
+    
+    ticket: Mapped["Ticket"] = relationship(
+    back_populates="attachments"
+)
     
     

@@ -2,6 +2,7 @@
 import pytest
 
 from fastapi import HTTPException
+from unittest.mock import patch
 
 from app.services.assignment_service import AssignmentService
 
@@ -21,6 +22,7 @@ class FakeUser:
 class FakeTicket:
     def __init__(self):
         self.id = 1
+        self.ticket_number = "TKT-000001"
         self.assigned_to_id = None
 
 
@@ -55,12 +57,23 @@ def test_assign_ticket_to_support_agent():
 
     service.repository = FakeRepository()
 
-    result = service.assign_ticket(
-        ticket_id=1,
-        assigned_to_id=5,
-    )
+    with patch(
+        "app.services.assignment_service.NotificationService"
+    ) as mock_notification_service:
+
+        result = service.assign_ticket(
+            ticket_id=1,
+            assigned_to_id=5,
+        )
 
     assert result.assigned_to_id == 5
+
+    mock_notification_service.return_value.create_notification.assert_called_once_with(
+        user_id=5,
+        title="New Ticket Assigned",
+        message="Ticket TKT-000001 has been assigned to you.",
+        notification_type="ticket_assigned",
+    )
 
 
 def test_unassign_ticket():

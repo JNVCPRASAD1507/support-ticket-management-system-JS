@@ -6,11 +6,11 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 
-if TYPE_CHECKING:
-    from app.models.category import Category
-    from app.models.user import User
-    from app.models.comment import Comment
-    from app.models.attachment import Attachment
+# if TYPE_CHECKING:
+from app.models.category import Category
+from app.models.user import User
+from app.models.comment import Comment
+from app.models.attachment import Attachment
 
 
 class Ticket(Base):
@@ -108,5 +108,6 @@ class Ticket(Base):
     )
 
     attachments: Mapped[list["Attachment"]] = relationship(
+        back_populates="ticket",
         cascade="all, delete-orphan",
     )

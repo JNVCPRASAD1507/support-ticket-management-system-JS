@@ -1,4 +1,3 @@
-
 from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -6,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.models.ticket import Ticket
 from app.models.user import User
 from app.repositories.ticket_repository import TicketRepository
+from app.services.notification_service import NotificationService
 
 
 class AssignmentService:
@@ -32,6 +32,7 @@ class AssignmentService:
         # Unassign ticket
         if assigned_to_id is None:
             ticket.assigned_to_id = None
+
             return self.repository.update(ticket)
 
         # Find user
@@ -42,15 +43,14 @@ class AssignmentService:
             )
         )
 
-        # User does not exist
+        # User does not exist or is inactive
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User not found or inactive",
             )
 
-        # Explicitly validate active state
-        # This is also important for mocked/fake repositories used in tests.
+        # Explicit active-state validation
         if not user.is_active:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -67,5 +67,20 @@ class AssignmentService:
         # Assign ticket
         ticket.assigned_to_id = assigned_to_id
 
-        return self.repository.update(ticket)
+        # Save ticket
+        ticket = self.repository.update(ticket)
 
+        # Create notification for assigned support agent
+        NotificationService(self.db).create_notification(
+            user_id=assigned_to_id,
+            title="New Ticket Assigned",
+            message=(
+                f"Ticket {ticket.ticket_number} "
+                f"has been assigned to you."
+            ),
+            notification_type="ticket_assigned",
+        )
+
+        return ticket
+    
+    
