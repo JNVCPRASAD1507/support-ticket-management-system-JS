@@ -1,20 +1,31 @@
-
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.audit_actions import AuditAction
 from app.models.comment import Comment
 from app.models.ticket import Ticket
 from app.repositories.comment_repository import CommentRepository
 from app.schemas.comment import CommentCreate, CommentUpdate
+from app.services.audit_log_service import create_audit_log
 
 
 class CommentService:
+
     def __init__(self, db: Session):
         self.db = db
         self.repository = CommentRepository(db)
 
-    def get_comment(self, comment_id: int) -> Comment:
-        comment = self.repository.get_by_id(comment_id)
+    # ---------------------------------------------------------
+    # GET SINGLE COMMENT
+    # ---------------------------------------------------------
+    def get_comment(
+        self,
+        comment_id: int,
+    ) -> Comment:
+
+        comment = self.repository.get_by_id(
+            comment_id
+        )
 
         if not comment:
             raise HTTPException(
@@ -24,8 +35,18 @@ class CommentService:
 
         return comment
 
-    def get_ticket_comments(self, ticket_id: int) -> list[Comment]:
-        ticket = self.db.get(Ticket, ticket_id)
+    # ---------------------------------------------------------
+    # GET TICKET COMMENTS
+    # ---------------------------------------------------------
+    def get_ticket_comments(
+        self,
+        ticket_id: int,
+    ) -> list[Comment]:
+
+        ticket = self.db.get(
+            Ticket,
+            ticket_id,
+        )
 
         if not ticket:
             raise HTTPException(
@@ -33,8 +54,13 @@ class CommentService:
                 detail="Ticket not found",
             )
 
-        return self.repository.get_by_ticket(ticket_id)
+        return self.repository.get_by_ticket(
+            ticket_id
+        )
 
+    # ---------------------------------------------------------
+    # CREATE COMMENT
+    # ---------------------------------------------------------
     def create_comment(
         self,
         ticket_id: int,
@@ -42,7 +68,10 @@ class CommentService:
         current_user_id: int,
     ) -> Comment:
 
-        ticket = self.db.get(Ticket, ticket_id)
+        ticket = self.db.get(
+            Ticket,
+            ticket_id,
+        )
 
         if not ticket:
             raise HTTPException(
@@ -56,8 +85,34 @@ class CommentService:
             content=data.content.strip(),
         )
 
-        return self.repository.create(comment)
+        comment = self.repository.create(
+            comment
+        )
 
+        # -----------------------------------------------------
+        # AUDIT: COMMENT CREATED
+        # -----------------------------------------------------
+        create_audit_log(
+            self.db,
+            user_id=current_user_id,
+            action=AuditAction.COMMENT_CREATED,
+            entity_type="Comment",
+            entity_id=comment.id,
+            description=(
+                f"Comment was added to "
+                f"ticket '{ticket.ticket_number}'"
+            ),
+            new_value=comment.content,
+        )
+
+        self.db.commit()
+        self.db.refresh(comment)
+
+        return comment
+
+    # ---------------------------------------------------------
+    # UPDATE COMMENT
+    # ---------------------------------------------------------
     def update_comment(
         self,
         comment_id: int,
@@ -65,7 +120,9 @@ class CommentService:
         current_user_id: int,
     ) -> Comment:
 
-        comment = self.get_comment(comment_id)
+        comment = self.get_comment(
+            comment_id
+        )
 
         if comment.user_id != current_user_id:
             raise HTTPException(
@@ -73,17 +130,48 @@ class CommentService:
                 detail="You can only update your own comments",
             )
 
-        comment.content = data.content.strip()
+        old_content = comment.content
+        new_content = data.content.strip()
 
-        return self.repository.update(comment)
+        comment.content = new_content
 
+        comment = self.repository.update(
+            comment
+        )
+
+        # -----------------------------------------------------
+        # AUDIT: COMMENT UPDATED
+        # -----------------------------------------------------
+        create_audit_log(
+            self.db,
+            user_id=current_user_id,
+            action=AuditAction.COMMENT_UPDATED,
+            entity_type="Comment",
+            entity_id=comment.id,
+            description=(
+                f"Comment {comment.id} was updated"
+            ),
+            old_value=old_content,
+            new_value=new_content,
+        )
+
+        self.db.commit()
+        self.db.refresh(comment)
+
+        return comment
+
+    # ---------------------------------------------------------
+    # DELETE COMMENT
+    # ---------------------------------------------------------
     def delete_comment(
         self,
         comment_id: int,
         current_user_id: int,
     ) -> None:
 
-        comment = self.get_comment(comment_id)
+        comment = self.get_comment(
+            comment_id
+        )
 
         if comment.user_id != current_user_id:
             raise HTTPException(
@@ -91,6 +179,29 @@ class CommentService:
                 detail="You can only delete your own comments",
             )
 
-        self.repository.delete(comment)
-        
-        
+        # Store values before deletion
+        deleted_comment_id = comment.id
+        deleted_content = comment.content
+        ticket_id = comment.ticket_id
+
+        self.repository.delete(
+            comment
+        )
+
+        # -----------------------------------------------------
+        # AUDIT: COMMENT DELETED
+        # -----------------------------------------------------
+        create_audit_log(
+            self.db,
+            user_id=current_user_id,
+            action=AuditAction.COMMENT_DELETED,
+            entity_type="Comment",
+            entity_id=deleted_comment_id,
+            description=(
+                f"Comment {deleted_comment_id} "
+                f"was deleted from ticket {ticket_id}"
+            ),
+            old_value=deleted_content,
+        )
+
+        self.db.commit()

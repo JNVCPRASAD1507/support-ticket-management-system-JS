@@ -1,15 +1,24 @@
+from datetime import datetime, timezone
+
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, joinedload
-from datetime import datetime, timezone
 
 from app.models.ticket import Ticket
 
 
 class TicketRepository:
+
     def __init__(self, db: Session):
         self.db = db
 
-    def get_by_id(self, ticket_id: int) -> Ticket | None:
+    # ---------------------------------------------------------
+    # GET SINGLE TICKET
+    # ---------------------------------------------------------
+    def get_by_id(
+        self,
+        ticket_id: int,
+    ) -> Ticket | None:
+
         statement = (
             select(Ticket)
             .options(
@@ -22,15 +31,25 @@ class TicketRepository:
 
         return self.db.scalar(statement)
 
+    # ---------------------------------------------------------
+    # GET BY TICKET NUMBER
+    # ---------------------------------------------------------
     def get_by_ticket_number(
         self,
         ticket_number: str,
     ) -> Ticket | None:
+
         statement = select(Ticket).where(Ticket.ticket_number == ticket_number)
 
         return self.db.scalar(statement)
 
-    def get_sla_breached_tickets(self) -> list[Ticket]:
+    # ---------------------------------------------------------
+    # GET SLA BREACHED TICKETS
+    # ---------------------------------------------------------
+    def get_sla_breached_tickets(
+        self,
+    ) -> list[Ticket]:
+
         current_time = datetime.now(timezone.utc)
 
         statement = (
@@ -50,23 +69,50 @@ class TicketRepository:
 
         return list(self.db.scalars(statement).unique().all())
 
-    def create(self, ticket: Ticket) -> Ticket:
+    # ---------------------------------------------------------
+    # CREATE
+    # ---------------------------------------------------------
+    def create(
+        self,
+        ticket: Ticket,
+    ) -> Ticket:
+
         self.db.add(ticket)
-        self.db.commit()
-        self.db.refresh(ticket)
+
+        # Flush sends INSERT to database and
+        # generates the ticket ID without committing.
+        self.db.flush()
 
         return ticket
 
-    def update(self, ticket: Ticket) -> Ticket:
-        self.db.commit()
-        self.db.refresh(ticket)
+    # ---------------------------------------------------------
+    # UPDATE
+    # ---------------------------------------------------------
+    def update(
+        self,
+        ticket: Ticket,
+    ) -> Ticket:
+
+        self.db.flush()
 
         return ticket
 
-    def delete(self, ticket: Ticket) -> None:
+    # ---------------------------------------------------------
+    # DELETE
+    # ---------------------------------------------------------
+    def delete(
+        self,
+        ticket: Ticket,
+    ) -> None:
+
         self.db.delete(ticket)
-        self.db.commit()
 
+        self.db.flush()
+
+    # ---------------------------------------------------------
+    # GET ALL
+    # SEARCH + FILTER + PAGINATION
+    # ---------------------------------------------------------
     def get_all(
         self,
         page: int,
@@ -79,7 +125,11 @@ class TicketRepository:
 
         conditions = []
 
+        # -----------------------------------------------------
+        # SEARCH
+        # -----------------------------------------------------
         if search:
+
             search_pattern = f"%{search}%"
 
             conditions.append(
@@ -90,15 +140,27 @@ class TicketRepository:
                 )
             )
 
+        # -----------------------------------------------------
+        # STATUS FILTER
+        # -----------------------------------------------------
         if status_filter:
             conditions.append(Ticket.status == status_filter)
 
+        # -----------------------------------------------------
+        # PRIORITY FILTER
+        # -----------------------------------------------------
         if priority:
             conditions.append(Ticket.priority == priority)
 
+        # -----------------------------------------------------
+        # CATEGORY FILTER
+        # -----------------------------------------------------
         if category_id is not None:
             conditions.append(Ticket.category_id == category_id)
 
+        # -----------------------------------------------------
+        # COUNT
+        # -----------------------------------------------------
         count_statement = select(func.count(Ticket.id))
 
         if conditions:
@@ -106,6 +168,9 @@ class TicketRepository:
 
         total = self.db.scalar(count_statement) or 0
 
+        # -----------------------------------------------------
+        # PAGINATION
+        # -----------------------------------------------------
         offset = (page - 1) * page_size
 
         statement = (
