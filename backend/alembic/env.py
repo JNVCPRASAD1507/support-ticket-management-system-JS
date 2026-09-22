@@ -14,6 +14,7 @@ from app.models.ticket import Ticket
 from app.models.category import Category
 from app.models.comment import Comment
 from app.models.refresh_token import RefreshToken
+from app.models.attachment import Attachment
 
 
 config = context.config
