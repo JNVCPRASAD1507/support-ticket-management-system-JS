@@ -1,8 +1,7 @@
-
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy import DateTime, ForeignKey, Integer, JSON, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -11,7 +10,11 @@ from app.db.base import Base
 class AuditLog(Base):
     __tablename__ = "audit_logs"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True,
+        index=True,
+    )
 
     user_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"),
@@ -49,6 +52,17 @@ class AuditLog(Base):
 
     new_value: Mapped[Optional[str]] = mapped_column(
         Text,
+        nullable=True,
+    )
+
+    ip_address: Mapped[Optional[str]] = mapped_column(
+        String(45),
+        nullable=True,
+    )
+
+    extra_metadata: Mapped[Optional[dict[str, Any]]] = mapped_column(
+        "metadata",
+        JSON,
         nullable=True,
     )
 

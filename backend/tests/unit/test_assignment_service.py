@@ -1,6 +1,6 @@
+# tests/unit/test_assignment_service.py
 
 import pytest
-
 from fastapi import HTTPException
 from unittest.mock import patch
 
@@ -44,17 +44,29 @@ class FakeDB:
     def scalar(self, statement):
         return self.user
 
+    def add(self, obj):
+        return obj
+
+    def flush(self):
+        pass
+
+    def commit(self):
+        pass
+
+    def refresh(self, obj):
+        return obj
+
 
 def test_assign_ticket_to_support_agent():
     agent = FakeUser(
         user_id=5,
         role_name="support_agent",
+        is_active=True,
     )
 
     db = FakeDB(user=agent)
 
     service = AssignmentService(db)
-
     service.repository = FakeRepository()
 
     with patch(
@@ -80,7 +92,6 @@ def test_unassign_ticket():
     db = FakeDB()
 
     service = AssignmentService(db)
-
     service.repository = FakeRepository()
 
     service.repository.ticket.assigned_to_id = 5
@@ -97,12 +108,12 @@ def test_cannot_assign_to_customer():
     customer = FakeUser(
         user_id=3,
         role_name="customer",
+        is_active=True,
     )
 
     db = FakeDB(user=customer)
 
     service = AssignmentService(db)
-
     service.repository = FakeRepository()
 
     with pytest.raises(HTTPException) as exc_info:
@@ -115,24 +126,30 @@ def test_cannot_assign_to_customer():
 
 
 def test_cannot_assign_to_inactive_agent():
-    agent = FakeUser(
+    inactive_agent = FakeUser(
         user_id=1,
         role_name="support_agent",
         is_active=False,
     )
 
-    db = FakeDB(user=agent)
+    # Important:
+    # The production query contains:
+    # User.is_active.is_(True)
+    #
+    # FakeDB.scalar() must simulate that query by returning None
+    # when the user is inactive.
+    db = FakeDB(user=None)
 
     service = AssignmentService(db)
-
     service.repository = FakeRepository()
 
     with pytest.raises(HTTPException) as exc_info:
         service.assign_ticket(
             ticket_id=1,
-            assigned_to_id=5,
+            assigned_to_id=1,
         )
 
     assert exc_info.value.status_code == 404
+    assert exc_info.value.detail == "User not found or inactive"
     
     

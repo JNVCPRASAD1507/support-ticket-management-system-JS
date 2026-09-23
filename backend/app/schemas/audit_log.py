@@ -1,6 +1,5 @@
-
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -14,8 +13,12 @@ class AuditLogResponse(BaseModel):
     description: Optional[str] = None
     old_value: Optional[str] = None
     new_value: Optional[str] = None
+    ip_address: Optional[str] = None
+    metadata: Optional[dict[str, Any]] = None
     created_at: datetime
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+    )
     
     
