@@ -9,6 +9,7 @@ from app.models.user import User
 from app.repositories.ticket_repository import TicketRepository
 from app.services.audit_log_service import create_audit_log
 from app.services.notification_service import NotificationService
+from app.core.exceptions import NotFoundException
 
 
 class AssignmentService:
@@ -83,9 +84,11 @@ class AssignmentService:
 
         # User does not exist or is inactive
         if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found or inactive",
+            raise NotFoundException(
+                # status_code=status.HTTP_404_NOT_FOUND,
+                code="USER_NOT_FOUND",
+                # detail="User not found or inactive",
+                message="User not found or inactive",
             )
 
         # ---------------------------------------------------------

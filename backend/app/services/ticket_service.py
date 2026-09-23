@@ -19,6 +19,7 @@ from app.services.audit_log_service import create_audit_log
 from app.services.sla_service import SLAService
 
 from app.utils.ticket_number import generate_ticket_number
+from app.core.exceptions import NotFoundException
 
 
 class TicketService:
@@ -39,11 +40,16 @@ class TicketService:
             ticket_id
         )
 
+        # if not ticket:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_404_NOT_FOUND,
+        #         detail="Ticket not found",
+        #     )
         if not ticket:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Ticket not found",
-            )
+            raise NotFoundException(
+                code="TICKET_NOT_FOUND",
+                message="Ticket not found",
+    )
 
         return ticket
 

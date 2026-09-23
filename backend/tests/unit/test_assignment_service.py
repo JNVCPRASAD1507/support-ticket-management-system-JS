@@ -2,6 +2,7 @@
 
 import pytest
 from fastapi import HTTPException
+from app.core.exceptions import NotFoundException
 from unittest.mock import patch
 
 from app.services.assignment_service import AssignmentService
@@ -143,13 +144,14 @@ def test_cannot_assign_to_inactive_agent():
     service = AssignmentService(db)
     service.repository = FakeRepository()
 
-    with pytest.raises(HTTPException) as exc_info:
+    with pytest.raises(NotFoundException) as exc_info:
         service.assign_ticket(
             ticket_id=1,
             assigned_to_id=1,
         )
 
     assert exc_info.value.status_code == 404
-    assert exc_info.value.detail == "User not found or inactive"
+    assert exc_info.value.code == "USER_NOT_FOUND"
+    assert exc_info.value.message == "User not found or inactive"
     
     
