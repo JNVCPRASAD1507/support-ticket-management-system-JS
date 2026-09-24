@@ -1,4 +1,3 @@
-
 /**
  * Main dashboard application (vanilla JS SPA)
  */
@@ -25,7 +24,9 @@ const topbarActions = document.getElementById("topbar-actions");
 document.querySelectorAll(".sidebar-nav a").forEach((link) => {
   link.addEventListener("click", (e) => {
     e.preventDefault();
-    document.querySelectorAll(".sidebar-nav a").forEach((a) => a.classList.remove("active"));
+    document
+      .querySelectorAll(".sidebar-nav a")
+      .forEach((a) => a.classList.remove("active"));
     link.classList.add("active");
     const view = link.dataset.view;
     navigate(view);
@@ -72,12 +73,15 @@ async function loadTickets() {
       page_size: 15,
     });
     if (ticketFilters.search) params.set("search", ticketFilters.search);
-    if (ticketFilters.status) params.set("status_filter", ticketFilters.status);
+    if (ticketFilters.status) params.set("status", ticketFilters.status);
     if (ticketFilters.priority) params.set("priority", ticketFilters.priority);
-    if (ticketFilters.category_id) params.set("category_id", ticketFilters.category_id);
+    if (ticketFilters.category_id)
+      params.set("category_id", ticketFilters.category_id);
 
     const data = await api.get(`/tickets?${params}`);
-    const categories = await api.get("/categories?active_only=true").catch(() => []);
+    const categories = await api
+      .get("/categories?active_only=true")
+      .catch(() => []);
 
     const totalPages = Math.max(1, Math.ceil(data.total / data.page_size));
 
@@ -135,7 +139,7 @@ async function loadTickets() {
                   <td><span class="badge badge-${t.priority}">${t.priority}</span></td>
                   <td>${formatDate(t.created_at)}</td>
                   <td><button class="btn btn-secondary btn-sm" data-ticket-id="${t.id}">View</button></td>
-                </tr>`
+                </tr>`,
                       )
                       .join("")
               }
@@ -153,16 +157,23 @@ async function loadTickets() {
     // Restore filter values
     document.getElementById("filter-status").value = ticketFilters.status;
     document.getElementById("filter-priority").value = ticketFilters.priority;
-    document.getElementById("filter-category").value = ticketFilters.category_id;
+    document.getElementById("filter-category").value =
+      ticketFilters.category_id;
 
-    document.getElementById("btn-apply-filters").addEventListener("click", () => {
-      ticketFilters.search = document.getElementById("filter-search").value.trim();
-      ticketFilters.status = document.getElementById("filter-status").value;
-      ticketFilters.priority = document.getElementById("filter-priority").value;
-      ticketFilters.category_id = document.getElementById("filter-category").value;
-      ticketPage = 1;
-      loadTickets();
-    });
+    document
+      .getElementById("btn-apply-filters")
+      .addEventListener("click", () => {
+        ticketFilters.search = document
+          .getElementById("filter-search")
+          .value.trim();
+        ticketFilters.status = document.getElementById("filter-status").value;
+        ticketFilters.priority =
+          document.getElementById("filter-priority").value;
+        ticketFilters.category_id =
+          document.getElementById("filter-category").value;
+        ticketPage = 1;
+        loadTickets();
+      });
 
     document.getElementById("prev-page")?.addEventListener("click", () => {
       if (ticketPage > 1) {
@@ -178,7 +189,9 @@ async function loadTickets() {
     });
 
     content.querySelectorAll("[data-ticket-id]").forEach((btn) => {
-      btn.addEventListener("click", () => openTicketDetail(btn.dataset.ticketId));
+      btn.addEventListener("click", () =>
+        openTicketDetail(btn.dataset.ticketId),
+      );
     });
   } catch (err) {
     content.innerHTML = `<div class="alert alert-error">${escapeHtml(err.message)}</div>`;
@@ -188,13 +201,16 @@ async function loadTickets() {
 async function openTicketDetail(ticketId) {
   content.innerHTML = `<div class="loading">Loading ticket…</div>`;
   try {
-    const [ticket, comments, attachments, categories, agents] = await Promise.all([
-      api.get(`/tickets/${ticketId}`),
-      api.get(`/comments/tickets/${ticketId}`).catch(() => []),
-      api.get(`/attachments/tickets/${ticketId}`).catch(() => []),
-      api.get("/categories?active_only=true").catch(() => []),
-      isAdmin() ? api.get("/users?page=1&page_size=100").catch(() => ({ items: [] })) : Promise.resolve({ items: [] }),
-    ]);
+    const [ticket, comments, attachments, categories, agents] =
+      await Promise.all([
+        api.get(`/tickets/${ticketId}`),
+        api.get(`/comments/tickets/${ticketId}`).catch(() => []),
+        api.get(`/attachments/tickets/${ticketId}`).catch(() => []),
+        api.get("/categories?active_only=true").catch(() => []),
+        isAdmin()
+          ? api.get("/users?page=1&page_size=100").catch(() => ({ items: [] }))
+          : Promise.resolve({ items: [] }),
+      ]);
 
     content.innerHTML = `
       <div class="card">
@@ -229,8 +245,11 @@ async function openTicketDetail(ticketId) {
             <select id="assign-user" style="padding:0.45rem 0.7rem;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text)">
               <option value="">Unassign</option>
               ${(agents.items || [])
-                .filter((u) => u.role === "agent" || u.role === "admin")
-                .map((u) => `<option value="${u.id}" ${ticket.assigned_to_id == u.id ? "selected" : ""}>${escapeHtml(u.name)}</option>`)
+                .filter((u) => u.role === "support_agent" || u.role === "admin")
+                .map(
+                  (u) =>
+                    `<option value="${u.id}" ${ticket.assigned_to_id == u.id ? "selected" : ""}>${escapeHtml(u.name)}</option>`,
+                )
                 .join("")}
             </select>
             <button class="btn btn-secondary btn-sm" id="btn-assign">Assign</button>
@@ -244,17 +263,19 @@ async function openTicketDetail(ticketId) {
       <div class="card">
         <h3 style="margin-bottom:0.75rem">Comments</h3>
         <div class="comments-list" id="comments-list">
-          ${(comments || []).length === 0
-            ? `<p class="empty-state">No comments yet</p>`
-            : (comments || [])
-                .map(
-                  (c) => `
+          ${
+            (comments || []).length === 0
+              ? `<p class="empty-state">No comments yet</p>`
+              : (comments || [])
+                  .map(
+                    (c) => `
             <div class="comment">
               <div class="comment-meta">User #${c.user_id || c.created_by_id || "?"} · ${formatDate(c.created_at)}</div>
               <div>${escapeHtml(c.content || c.body || "")}</div>
-            </div>`
-                )
-                .join("")}
+            </div>`,
+                  )
+                  .join("")
+          }
         </div>
         <div class="form-group" style="margin-top:1rem">
           <textarea id="comment-text" placeholder="Write a comment…"></textarea>
@@ -265,100 +286,187 @@ async function openTicketDetail(ticketId) {
       <div class="card">
         <h3 style="margin-bottom:0.75rem">Attachments</h3>
         <ul id="attachments-list" style="list-style:none;margin-bottom:1rem">
-          ${(attachments || []).length === 0
-            ? `<li class="empty-state">No attachments</li>`
-            : (attachments || [])
-                .map(
-                  (a) => `
+          ${
+            (attachments || []).length === 0
+              ? `<li class="empty-state">No attachments</li>`
+              : (attachments || [])
+                  .map(
+                    (a) => `
             <li style="padding:0.4rem 0;border-bottom:1px solid var(--border)">
               ${escapeHtml(a.filename || a.file_name || "file")} 
               <button class="btn btn-danger btn-sm" data-del-att="${a.id}" style="margin-left:0.5rem">Delete</button>
-            </li>`
-                )
-                .join("")}
+            </li>`,
+                  )
+                  .join("")
+          }
         </ul>
         <input type="file" id="file-input" />
         <button class="btn btn-secondary btn-sm" id="btn-upload" style="margin-top:0.5rem">Upload</button>
       </div>
     `;
 
-    document.getElementById("new-status").value = ticket.status;
-    document.getElementById("back-to-list").addEventListener("click", () => navigate("tickets"));
+   document.getElementById("new-status").value = ticket.status;
 
-    document.getElementById("btn-change-status").addEventListener("click", async () => {
-      try {
-        await api.patch(`/tickets/${ticketId}/status`, {
-          status: document.getElementById("new-status").value,
-        });
-        openTicketDetail(ticketId);
-      } catch (err) {
-        alert(err.message);
-      }
-    });
+document
+  .getElementById("back-to-list")
+  .addEventListener("click", () => {
+    navigate("tickets");
+  });
 
-    document.getElementById("btn-add-comment").addEventListener("click", async () => {
-      const text = document.getElementById("comment-text").value.trim();
-      if (!text) return;
-      try {
-        await api.post(`/comments/tickets/${ticketId}`, { content: text });
-        openTicketDetail(ticketId);
-      } catch (err) {
-        try {
-          await api.post(`/comments/tickets/${ticketId}`, { body: text });
-          openTicketDetail(ticketId);
-        } catch (err2) {
-          alert(err2.message || err.message);
-        }
-      }
-    });
+document
+  .getElementById("btn-change-status")
+  .addEventListener("click", async () => {
+    const button = document.getElementById("btn-change-status");
+    const status = document.getElementById("new-status").value;
 
-    document.getElementById("btn-upload").addEventListener("click", async () => {
-      const fileInput = document.getElementById("file-input");
-      if (!fileInput.files.length) return alert("Select a file first");
+    if (!status) {
+      alert("Please select a status.");
+      return;
+    }
+
+    if (button.disabled) {
+      return;
+    }
+
+    button.disabled = true;
+
+    try {
+      await api.patch(`/tickets/${ticketId}/status`, {
+        status: status,
+      });
+
+      await openTicketDetail(ticketId);
+    } catch (err) {
+      alert(err.message || "Failed to update status.");
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+document
+  .getElementById("btn-add-comment")
+  .addEventListener("click", async () => {
+    const text = document
+      .getElementById("comment-text")
+      .value
+      .trim();
+
+    if (!text) {
+      alert("Please enter a comment.");
+      return;
+    }
+
+    const button = document.getElementById("btn-add-comment");
+
+    if (button.disabled) {
+      return;
+    }
+
+    button.disabled = true;
+
+    try {
+      await api.post(`/comments/tickets/${ticketId}`, {
+        content: text,
+      });
+
+      await openTicketDetail(ticketId);
+    } catch (err) {
+      alert(err.message || "Failed to add comment.");
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+document
+  .getElementById("btn-upload")
+  .addEventListener("click", async () => {
+    const fileInput = document.getElementById("file-input");
+
+    if (!fileInput || !fileInput.files.length) {
+      alert("Select a file first.");
+      return;
+    }
+
+    const button = document.getElementById("btn-upload");
+
+    if (button.disabled) {
+      return;
+    }
+
+    button.disabled = true;
+
+    try {
       const fd = new FormData();
       fd.append("file", fileInput.files[0]);
+
+      await api.upload(
+        `/attachments/tickets/${ticketId}`,
+        fd
+      );
+
+      await openTicketDetail(ticketId);
+    } catch (err) {
+      alert(err.message || "Failed to upload attachment.");
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+content.querySelectorAll("[data-del-att]").forEach((btn) => {
+  btn.addEventListener("click", async () => {
+    if (!confirm("Delete this attachment?")) {
+      return;
+    }
+
+    btn.disabled = true;
+
+    try {
+      await api.delete(`/attachments/${btn.dataset.delAtt}`);
+
+      await openTicketDetail(ticketId);
+    } catch (err) {
+      alert(err.message || "Failed to delete attachment.");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+});
+
+if (isAdmin()) {
+  document
+    .getElementById("btn-assign")
+    ?.addEventListener("click", async () => {
+      const val = document.getElementById("assign-user").value;
+
       try {
-        await api.upload(`/attachments/tickets/${ticketId}`, fd);
-        openTicketDetail(ticketId);
+        await api.patch(`/tickets/${ticketId}/assign`, {
+          assigned_to_id: val
+            ? parseInt(val, 10)
+            : null,
+        });
+
+        await openTicketDetail(ticketId);
       } catch (err) {
-        alert(err.message);
+        alert(err.message || "Failed to assign ticket.");
       }
     });
 
-    content.querySelectorAll("[data-del-att]").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        if (!confirm("Delete this attachment?")) return;
-        try {
-          await api.delete(`/attachments/${btn.dataset.delAtt}`);
-          openTicketDetail(ticketId);
-        } catch (err) {
-          alert(err.message);
-        }
-      });
-    });
+  document
+    .getElementById("btn-delete-ticket")
+    ?.addEventListener("click", async () => {
+      if (!confirm("Delete this ticket permanently?")) {
+        return;
+      }
 
-    if (isAdmin()) {
-      document.getElementById("btn-assign")?.addEventListener("click", async () => {
-        const val = document.getElementById("assign-user").value;
-        try {
-          await api.patch(`/tickets/${ticketId}/assign`, {
-            assigned_to_id: val ? parseInt(val, 10) : null,
-          });
-          openTicketDetail(ticketId);
-        } catch (err) {
-          alert(err.message);
-        }
-      });
-      document.getElementById("btn-delete-ticket")?.addEventListener("click", async () => {
-        if (!confirm("Delete this ticket permanently?")) return;
-        try {
-          await api.delete(`/tickets/${ticketId}`);
-          navigate("tickets");
-        } catch (err) {
-          alert(err.message);
-        }
-      });
-    }
+      try {
+        await api.delete(`/tickets/${ticketId}`);
+
+        navigate("tickets");
+      } catch (err) {
+        alert(err.message || "Failed to delete ticket.");
+      }
+    });
+}
   } catch (err) {
     content.innerHTML = `<div class="alert alert-error">${escapeHtml(err.message)}</div>
       <button class="btn btn-secondary" onclick="navigate('tickets')">Back</button>`;
@@ -405,30 +513,35 @@ async function showCreateTicket() {
     </div>
   `;
 
-  document.getElementById("create-ticket-form").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const alertEl = document.getElementById("create-alert");
-    const btn = document.getElementById("btn-create");
-    btn.disabled = true;
-    try {
-      const ticket = await api.post("/tickets", {
-        title: document.getElementById("t-title").value.trim(),
-        description: document.getElementById("t-desc").value.trim(),
-        priority: document.getElementById("t-priority").value,
-        category_id: parseInt(document.getElementById("t-category").value, 10),
-      });
-      alertEl.className = "alert alert-success";
-      alertEl.textContent = `Ticket ${ticket.ticket_number} created!`;
-      alertEl.classList.remove("hidden");
-      setTimeout(() => openTicketDetail(ticket.id), 800);
-    } catch (err) {
-      alertEl.className = "alert alert-error";
-      alertEl.textContent = err.message;
-      alertEl.classList.remove("hidden");
-    } finally {
-      btn.disabled = false;
-    }
-  });
+  document
+    .getElementById("create-ticket-form")
+    .addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const alertEl = document.getElementById("create-alert");
+      const btn = document.getElementById("btn-create");
+      btn.disabled = true;
+      try {
+        const ticket = await api.post("/tickets", {
+          title: document.getElementById("t-title").value.trim(),
+          description: document.getElementById("t-desc").value.trim(),
+          priority: document.getElementById("t-priority").value,
+          category_id: parseInt(
+            document.getElementById("t-category").value,
+            10,
+          ),
+        });
+        alertEl.className = "alert alert-success";
+        alertEl.textContent = `Ticket ${ticket.ticket_number} created!`;
+        alertEl.classList.remove("hidden");
+        setTimeout(() => openTicketDetail(ticket.id), 800);
+      } catch (err) {
+        alertEl.className = "alert alert-error";
+        alertEl.textContent = err.message;
+        alertEl.classList.remove("hidden");
+      } finally {
+        btn.disabled = false;
+      }
+    });
 }
 
 // ========== Categories ==========
@@ -454,7 +567,7 @@ async function loadCategories() {
                   <td>${escapeHtml(c.name)}</td>
                   <td>${escapeHtml(c.description || "—")}</td>
                   <td>${c.is_active ? "✅" : "❌"}</td>
-                </tr>`
+                </tr>`,
                 )
                 .join("")}
             </tbody>
@@ -503,7 +616,7 @@ async function loadUsers() {
                   <td>${escapeHtml(u.email)}</td>
                   <td><span class="badge badge-open">${u.role}</span></td>
                   <td>${u.is_active ? "✅" : "❌"}</td>
-                </tr>`
+                </tr>`,
                 )
                 .join("")}
             </tbody>
@@ -533,7 +646,7 @@ async function loadNotifications() {
             <div class="comment" style="opacity:${n.is_read ? 0.6 : 1}">
               <div class="comment-meta">${formatDate(n.created_at)} ${n.is_read ? "" : "· New"}</div>
               <div>${escapeHtml(n.message || n.title || JSON.stringify(n))}</div>
-            </div>`
+            </div>`,
                 )
                 .join("")
         }
@@ -568,5 +681,3 @@ window.navigate = navigate;
 
 // Initial view
 navigate("tickets");
-
-

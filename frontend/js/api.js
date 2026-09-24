@@ -1,4 +1,3 @@
-
 /**
  * Core API helper – all requests go through here.
  * Automatically attaches Bearer token and handles 401 refresh.
@@ -29,10 +28,15 @@ async function apiRequest(method, path, body = null, isFormData = false) {
   let response = await fetch(url, options);
 
   // Try refresh once on 401
-  if (response.status === 401 && path !== "/auth/login" && path !== "/auth/refresh") {
+  if (
+    response.status === 401 &&
+    path !== "/auth/login" &&
+    path !== "/auth/refresh"
+  ) {
     const refreshed = await tryRefreshToken();
     if (refreshed) {
-      headers["Authorization"] = `Bearer ${localStorage.getItem(ACCESS_TOKEN_KEY)}`;
+      headers["Authorization"] =
+        `Bearer ${localStorage.getItem(ACCESS_TOKEN_KEY)}`;
       response = await fetch(url, { ...options, headers });
     } else {
       clearAuth();
@@ -48,12 +52,25 @@ async function apiRequest(method, path, body = null, isFormData = false) {
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    const message =
-      data.detail ||
-      (Array.isArray(data.detail) ? data.detail.map((d) => d.msg).join(", ") : null) ||
-      data.message ||
-      `Request failed (${response.status})`;
-    throw new Error(typeof message === "string" ? message : JSON.stringify(message));
+    let message = `Request failed (${response.status})`;
+
+    if (Array.isArray(data.detail)) {
+      message = data.detail
+        .map((d) => d.msg || d.message || JSON.stringify(d))
+        .join(", ");
+    } else if (typeof data.detail === "string") {
+      message = data.detail;
+    } else if (data.error?.message) {
+      message = data.error.message;
+    } else if (Array.isArray(data.error?.details)) {
+      message = data.error.details
+        .map((d) => `${d.field || "field"}: ${d.message || "Invalid value"}`)
+        .join(", ");
+    } else if (data.message) {
+      message = data.message;
+    }
+
+    throw new Error(message);
   }
 
   return data;
@@ -94,4 +111,3 @@ const api = {
   delete: (path) => apiRequest("DELETE", path),
   upload: (path, formData) => apiRequest("POST", path, formData, true),
 };
-

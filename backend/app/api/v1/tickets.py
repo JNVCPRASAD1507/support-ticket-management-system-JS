@@ -148,13 +148,14 @@ def assign_ticket(
     ticket_id: int,
     data: TicketAssignmentRequest,
     db: Session = Depends(get_db),
-    _: User = Depends(get_admin),
+    current_user: User = Depends(get_admin),
 ):
     service = AssignmentService(db)
 
     return service.assign_ticket(
         ticket_id=ticket_id,
         assigned_to_id=data.assigned_to_id,
+        current_user_id=current_user.id,
     )
 
 
@@ -171,8 +172,9 @@ def change_ticket_status(
     service = TicketWorkflowService(db)
 
     return service.change_status(
-        ticket_id=ticket_id,
-        new_status=data.status,
+    ticket_id=ticket_id,
+    new_status=data.status,
+    current_user=current_user,
     )
 
 
