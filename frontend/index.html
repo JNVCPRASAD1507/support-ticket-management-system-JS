@@ -1,0 +1,141 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Support Ticket System – Login</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="auth-page">
+    <div class="auth-card">
+      <h1>🎫 Support Tickets</h1>
+      <p class="subtitle">Sign in or create an account</p>
+
+      <div class="auth-tabs">
+        <button type="button" id="tab-login" class="active">Login</button>
+        <button type="button" id="tab-register">Register</button>
+      </div>
+
+      <div id="alert" class="alert hidden"></div>
+
+      <!-- Login form -->
+      <form id="login-form">
+        <div class="form-group">
+          <label for="login-email">Email</label>
+          <input type="email" id="login-email" required placeholder="you@example.com" autocomplete="email" />
+        </div>
+        <div class="form-group">
+          <label for="login-password">Password</label>
+          <input type="password" id="login-password" required minlength="8" placeholder="••••••••" autocomplete="current-password" />
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" id="login-btn">Login</button>
+      </form>
+
+      <!-- Register form -->
+      <form id="register-form" class="hidden">
+        <div class="form-group">
+          <label for="reg-name">Full Name</label>
+          <input type="text" id="reg-name" required minlength="2" placeholder="John Doe" />
+        </div>
+        <div class="form-group">
+          <label for="reg-email">Email</label>
+          <input type="email" id="reg-email" required placeholder="you@example.com" />
+        </div>
+        <div class="form-group">
+          <label for="reg-password">Password</label>
+          <input type="password" id="reg-password" required minlength="8" placeholder="Min 8 characters" />
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" id="register-btn">Create Account</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    // Redirect if already logged in
+    if (isLoggedIn()) {
+      window.location.href = "dashboard.html";
+    }
+
+    const tabLogin = document.getElementById("tab-login");
+    const tabRegister = document.getElementById("tab-register");
+    const loginForm = document.getElementById("login-form");
+    const registerForm = document.getElementById("register-form");
+    const alertEl = document.getElementById("alert");
+
+    function showAlert(msg, type = "error") {
+      alertEl.textContent = msg;
+      alertEl.className = `alert alert-${type}`;
+      alertEl.classList.remove("hidden");
+    }
+
+    function hideAlert() {
+      alertEl.classList.add("hidden");
+    }
+
+    tabLogin.addEventListener("click", () => {
+      tabLogin.classList.add("active");
+      tabRegister.classList.remove("active");
+      loginForm.classList.remove("hidden");
+      registerForm.classList.add("hidden");
+      hideAlert();
+    });
+
+    tabRegister.addEventListener("click", () => {
+      tabRegister.classList.add("active");
+      tabLogin.classList.remove("active");
+      registerForm.classList.remove("hidden");
+      loginForm.classList.add("hidden");
+      hideAlert();
+    });
+
+    loginForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      hideAlert();
+      const btn = document.getElementById("login-btn");
+      btn.disabled = true;
+      btn.textContent = "Signing in…";
+      try {
+        await login(
+          document.getElementById("login-email").value.trim(),
+          document.getElementById("login-password").value
+        );
+        window.location.href = "dashboard.html";
+      } catch (err) {
+        showAlert(err.message || "Login failed");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Login";
+      }
+    });
+
+    registerForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      hideAlert();
+      const btn = document.getElementById("register-btn");
+      btn.disabled = true;
+      btn.textContent = "Creating…";
+      try {
+        await register(
+          document.getElementById("reg-name").value.trim(),
+          document.getElementById("reg-email").value.trim(),
+          document.getElementById("reg-password").value
+        );
+        showAlert("Account created! Please login.", "success");
+        tabLogin.click();
+        document.getElementById("login-email").value = document.getElementById("reg-email").value;
+      } catch (err) {
+        showAlert(err.message || "Registration failed");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Create Account";
+      }
+    });
+  </script>
+</body>
+</html>
+

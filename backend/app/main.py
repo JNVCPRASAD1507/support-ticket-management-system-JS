@@ -12,6 +12,7 @@ from app.core.exceptions import AppException
 #     validation_exception_handler,
 # )
 from app.core.exception_handlers import register_exception_handlers
+from fastapi.middleware.cors import CORSMiddleware
 
 
 app = FastAPI(
@@ -21,6 +22,13 @@ app = FastAPI(
     debug=settings.debug,
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  #  or ["http://127.0.0.1:5500", "http://localhost:5500"]
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # app.add_exception_handler(
 #     AppException,
