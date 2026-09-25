@@ -7,6 +7,7 @@ from app.models.ticket import Ticket
 from app.repositories.comment_repository import CommentRepository
 from app.schemas.comment import CommentCreate, CommentUpdate
 from app.services.audit_log_service import create_audit_log
+from app.services.notification_service import NotificationService
 
 
 class CommentService:
@@ -104,6 +105,19 @@ class CommentService:
             ),
             new_value=comment.content,
         )
+
+        recipients = {ticket.created_by_id}
+        if ticket.assigned_to_id is not None:
+            recipients.add(ticket.assigned_to_id)
+        recipients.discard(current_user_id)
+        notification_service = NotificationService(self.db)
+        for user_id in recipients:
+            notification_service.create_notification(
+                user_id=user_id,
+                title="New Ticket Comment",
+                message=f"A new comment was added to ticket {ticket.ticket_number}.",
+                notification_type="comment_created",
+            )
 
         self.db.commit()
         self.db.refresh(comment)

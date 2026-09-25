@@ -8,10 +8,22 @@ from app.services.ticket_workflow_service import (
 )
 
 
+class FakeRole:
+    def __init__(self, name):
+        self.name = name
+
+class FakeUser:
+    def __init__(self, user_id=5, role_name="admin"):
+        self.id = user_id
+        self.role = FakeRole(role_name)
+
 class FakeTicket:
     def __init__(self, status):
         self.id = 1
         self.status = status
+        self.ticket_number = "TKT-000001"
+        self.created_by_id = 10
+        self.assigned_to_id = 5
 
 
 class FakeRepository:
@@ -26,7 +38,12 @@ class FakeRepository:
 
 
 class FakeDB:
-    pass
+    def commit(self):
+        pass
+    def refresh(self, obj):
+        return obj
+    def add(self, obj):
+        pass
 
 
 def test_open_to_in_progress():
@@ -39,6 +56,7 @@ def test_open_to_in_progress():
     result = service.change_status(
         ticket_id=1,
         new_status="in_progress",
+        current_user=FakeUser(),
     )
 
     assert result.status == "in_progress"
@@ -54,6 +72,7 @@ def test_in_progress_to_resolved():
     result = service.change_status(
         ticket_id=1,
         new_status="resolved",
+        current_user=FakeUser(),
     )
 
     assert result.status == "resolved"
@@ -69,6 +88,7 @@ def test_resolved_to_closed():
     result = service.change_status(
         ticket_id=1,
         new_status="closed",
+        current_user=FakeUser(),
     )
 
     assert result.status == "closed"
@@ -84,6 +104,7 @@ def test_resolved_can_return_to_in_progress():
     result = service.change_status(
         ticket_id=1,
         new_status="in_progress",
+        current_user=FakeUser(),
     )
 
     assert result.status == "in_progress"
@@ -100,6 +121,7 @@ def test_open_cannot_go_directly_to_closed():
         service.change_status(
             ticket_id=1,
             new_status="closed",
+            current_user=FakeUser(),
         )
 
     assert exc_info.value.status_code == 400
@@ -116,6 +138,7 @@ def test_closed_ticket_cannot_change_status():
         service.change_status(
             ticket_id=1,
             new_status="open",
+            current_user=FakeUser(),
         )
 
     assert exc_info.value.status_code == 400

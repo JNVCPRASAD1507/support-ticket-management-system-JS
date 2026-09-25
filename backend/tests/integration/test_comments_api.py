@@ -1,15 +1,15 @@
 
 
 def test_comments_require_authentication(client):
-    response = client.get("/tickets/1/comments")
+    response = client.get("/comments/tickets/1")
 
     assert response.status_code == 401
     
 def test_add_comment_requires_authentication(client):
     response = client.post(
-        "/tickets/1/comments",
+        "/comments/tickets/1",
         json={
-            "message": "Test comment"
+            "content": "Test comment"
         },
     )
 

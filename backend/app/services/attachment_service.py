@@ -9,6 +9,7 @@ from app.models.attachment import Attachment
 from app.models.ticket import Ticket
 from app.repositories.attachment_repository import AttachmentRepository
 from app.services.audit_log_service import create_audit_log
+from app.services.notification_service import NotificationService
 from app.utils.file_validation import validate_file
 
 
@@ -161,6 +162,19 @@ class AttachmentService:
                 ),
                 new_value=attachment.filename,
             )
+
+            recipients = {ticket.created_by_id}
+            if ticket.assigned_to_id is not None:
+                recipients.add(ticket.assigned_to_id)
+            recipients.discard(current_user_id)
+            notification_service = NotificationService(self.db)
+            for user_id in recipients:
+                notification_service.create_notification(
+                    user_id=user_id,
+                    title="New Ticket Attachment",
+                    message=f"A new attachment was added to ticket {ticket.ticket_number}.",
+                    notification_type="attachment_created",
+                )
 
             self.db.commit()
             self.db.refresh(attachment)

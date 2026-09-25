@@ -1,7 +1,7 @@
 
 def test_attachment_upload_requires_authentication(client):
     response = client.post(
-        "/tickets/1/attachments",
+        "/attachments/tickets/1",
         files={
             "file": (
                 "test.txt",
@@ -16,9 +16,10 @@ def test_attachment_upload_requires_authentication(client):
 def test_invalid_attachment_type(
     client,
     auth_headers,
+    existing_ticket_id,
 ):
     response = client.post(
-        "/tickets/1/attachments",
+        "/attachments/tickets/1",
         headers=auth_headers,
         files={
             "file": (

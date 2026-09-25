@@ -233,10 +233,7 @@ async function openTicketDetail(ticketId) {
 
         <div style="display:flex;flex-wrap:wrap;gap:0.75rem;margin:1.25rem 0;">
           <select id="new-status" style="padding:0.45rem 0.7rem;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text)">
-            <option value="open">Open</option>
-            <option value="in_progress">In Progress</option>
-            <option value="resolved">Resolved</option>
-            <option value="closed">Closed</option>
+            ${getAllowedStatusOptions(ticket.status)}
           </select>
           <button class="btn btn-primary btn-sm" id="btn-change-status">Update Status</button>
           ${
@@ -245,7 +242,7 @@ async function openTicketDetail(ticketId) {
             <select id="assign-user" style="padding:0.45rem 0.7rem;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text)">
               <option value="">Unassign</option>
               ${(agents.items || [])
-                .filter((u) => u.role === "support_agent" || u.role === "admin")
+                .filter((u) => u.role === "support_agent")
                 .map(
                   (u) =>
                     `<option value="${u.id}" ${ticket.assigned_to_id == u.id ? "selected" : ""}>${escapeHtml(u.name)}</option>`,
@@ -637,24 +634,72 @@ async function loadNotifications() {
     const items = Array.isArray(list) ? list : list.items || [];
     content.innerHTML = `
       <div class="card">
+        <div class="card-header">
+          <h3>Notifications</h3>
+          ${items.some((n) => !n.is_read) ? `<button class="btn btn-secondary btn-sm" id="btn-mark-all-read">Mark all as read</button>` : ""}
+        </div>
         ${
           items.length === 0
             ? `<p class="empty-state">No notifications</p>`
             : items
                 .map(
                   (n) => `
-            <div class="comment" style="opacity:${n.is_read ? 0.6 : 1}">
-              <div class="comment-meta">${formatDate(n.created_at)} ${n.is_read ? "" : "· New"}</div>
-              <div>${escapeHtml(n.message || n.title || JSON.stringify(n))}</div>
+            <div class="comment" style="opacity:${n.is_read ? 0.6 : 1};display:flex;justify-content:space-between;gap:1rem;align-items:flex-start">
+              <div>
+                <div class="comment-meta">${formatDate(n.created_at)} ${n.is_read ? "" : "· New"}</div>
+                <div><strong>${escapeHtml(n.title || "Notification")}</strong></div>
+                <div>${escapeHtml(n.message || "")}</div>
+              </div>
+              ${!n.is_read ? `<button class="btn btn-secondary btn-sm" data-read-notification="${n.id}">Mark read</button>` : ""}
             </div>`,
                 )
                 .join("")
         }
       </div>
     `;
+
+    document.getElementById("btn-mark-all-read")?.addEventListener("click", async (event) => {
+      event.currentTarget.disabled = true;
+      try {
+        await api.patch("/notifications/read-all");
+        await loadNotifications();
+      } catch (err) {
+        alert(err.message || "Failed to mark notifications as read.");
+      }
+    });
+
+    content.querySelectorAll("[data-read-notification]").forEach((button) => {
+      button.addEventListener("click", async () => {
+        button.disabled = true;
+        try {
+          await api.patch(`/notifications/${button.dataset.readNotification}/read`);
+          await loadNotifications();
+        } catch (err) {
+          alert(err.message || "Failed to mark notification as read.");
+        }
+      });
+    });
   } catch (err) {
     content.innerHTML = `<div class="alert alert-error">${escapeHtml(err.message)}</div>`;
   }
+}
+
+function getAllowedStatusOptions(currentStatus) {
+  const transitions = {
+    open: ["open", "in_progress"],
+    in_progress: ["in_progress", "resolved"],
+    resolved: ["resolved", "closed", "in_progress"],
+    closed: ["closed"],
+  };
+  const labels = {
+    open: "Open",
+    in_progress: "In Progress",
+    resolved: "Resolved",
+    closed: "Closed",
+  };
+  return (transitions[currentStatus] || [currentStatus])
+    .map((value) => `<option value="${value}">${labels[value] || value}</option>`)
+    .join("");
 }
 
 // ========== Helpers ==========

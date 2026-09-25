@@ -94,7 +94,6 @@ def get_tickets(
         page_size=page_size,
     )
 
-
 @router.get(
     "/sla/breached",
     response_model=list[TicketResponse],
